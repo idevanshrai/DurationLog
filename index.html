@@ -1,9 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Section Duration Analytics</title>
   <!-- Google Analytics 4 -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-VL8F4DH0XM"></script>
   <script>
@@ -11,12 +8,23 @@
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
     gtag('config', 'G-VL8F4DH0XM', {
+      debug_mode: true,
       send_page_view: true,
-      // Enable enhanced measurement
       enhanced_measurement: {
         scroll_tracking: true,
         time_on_page: true,
         time_on_site: true
+      }
+    });
+
+    // Verify GA4 is loading
+    window.addEventListener('load', function() {
+      console.log('GA4 Debug: Checking if gtag is loaded:', typeof gtag === 'function');
+      if (typeof gtag === 'function') {
+        gtag('event', 'page_load', {
+          'event_category': 'Page Interaction',
+          'event_label': 'Initial Load'
+        });
       }
     });
 
