@@ -7,9 +7,15 @@
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
+    
+    // Configure with custom dimensions
     gtag('config', 'G-VL8F4DH0XM', {
       debug_mode: true,
-      send_page_view: true
+      send_page_view: true,
+      custom_map: {
+        'dimension1': 'section_name',
+        'dimension2': 'time_spent'
+      }
     });
 
     // Section timing tracking
@@ -22,21 +28,19 @@
       const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
           const sectionId = entry.target.id;
+          const sectionName = sectionId.charAt(0).toUpperCase() + sectionId.slice(1);
           
           if (entry.isIntersecting) {
-            // Section came into view
             if (activeSection !== sectionId) {
               // Send timing data for previous section if exists
               if (activeSection && sectionStartTime) {
                 const timeSpent = Date.now() - sectionStartTime;
-                gtag('event', 'section_time', {
-                  'section_id': activeSection,
-                  'time_spent': timeSpent,
-                  'time_spent_seconds': Math.round(timeSpent / 1000)
+                gtag('event', 'section_engagement', {
+                  'section_name': activeSection,
+                  'time_spent': Math.round(timeSpent / 1000),
+                  'event_category': 'Section Timing',
+                  'event_label': activeSection
                 });
-                
-                // Store in our local tracking
-                sectionTimingData[activeSection] = (sectionTimingData[activeSection] || 0) + timeSpent;
               }
               
               // Start timing new section
@@ -45,8 +49,9 @@
               
               // Track section view
               gtag('event', 'section_view', {
-                'section_id': sectionId,
-                'section_name': sectionId.charAt(0).toUpperCase() + sectionId.slice(1)
+                'section_name': sectionName,
+                'event_category': 'Section Interaction',
+                'event_label': 'View'
               });
             }
           }
@@ -62,19 +67,21 @@
         const finalTime = Date.now() - sectionStartTime;
         sectionTimingData[activeSection] = (sectionTimingData[activeSection] || 0) + finalTime;
         
-        // Send final timing for current section
-        gtag('event', 'section_time', {
-          'section_id': activeSection,
-          'time_spent': finalTime,
-          'time_spent_seconds': Math.round(finalTime / 1000)
+        // Send final timing data
+        gtag('event', 'section_engagement', {
+          'section_name': activeSection,
+          'time_spent': Math.round(finalTime / 1000),
+          'event_category': 'Section Timing',
+          'event_label': 'Final'
         });
 
         // Send summary of all section timings
         Object.entries(sectionTimingData).forEach(([section, time]) => {
           gtag('event', 'total_section_time', {
-            'section_id': section,
-            'total_time_spent': time,
-            'total_time_seconds': Math.round(time / 1000)
+            'section_name': section,
+            'time_spent': Math.round(time / 1000),
+            'event_category': 'Section Summary',
+            'event_label': 'Total Time'
           });
         });
       }
@@ -83,6 +90,12 @@
     // Initialize tracking when page loads
     window.addEventListener('load', () => {
       trackSectionTiming();
+      
+      // Track initial page load
+      gtag('event', 'page_ready', {
+        'event_category': 'Page Lifecycle',
+        'event_label': 'Initial Load'
+      });
     });
 
     // Verify GA4 is loading
@@ -248,6 +261,9 @@
       margin-bottom: 2px;
     }
   </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Section Duration Analytics</title>
 </head>
 <body>
   <section id="hero" class="hero">
