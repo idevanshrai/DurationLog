@@ -9,12 +9,80 @@
     gtag('js', new Date());
     gtag('config', 'G-VL8F4DH0XM', {
       debug_mode: true,
-      send_page_view: true,
-      enhanced_measurement: {
-        scroll_tracking: true,
-        time_on_page: true,
-        time_on_site: true
+      send_page_view: true
+    });
+
+    // Section timing tracking
+    const sectionTimingData = {};
+    let activeSection = null;
+    let sectionStartTime = null;
+
+    function trackSectionTiming() {
+      const sections = document.querySelectorAll('section');
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          const sectionId = entry.target.id;
+          
+          if (entry.isIntersecting) {
+            // Section came into view
+            if (activeSection !== sectionId) {
+              // Send timing data for previous section if exists
+              if (activeSection && sectionStartTime) {
+                const timeSpent = Date.now() - sectionStartTime;
+                gtag('event', 'section_time', {
+                  'section_id': activeSection,
+                  'time_spent': timeSpent,
+                  'time_spent_seconds': Math.round(timeSpent / 1000)
+                });
+                
+                // Store in our local tracking
+                sectionTimingData[activeSection] = (sectionTimingData[activeSection] || 0) + timeSpent;
+              }
+              
+              // Start timing new section
+              activeSection = sectionId;
+              sectionStartTime = Date.now();
+              
+              // Track section view
+              gtag('event', 'section_view', {
+                'section_id': sectionId,
+                'section_name': sectionId.charAt(0).toUpperCase() + sectionId.slice(1)
+              });
+            }
+          }
+        });
+      }, { threshold: 0.5 });
+
+      sections.forEach(section => observer.observe(section));
+    }
+
+    // Send final timing data when user leaves
+    window.addEventListener('beforeunload', () => {
+      if (activeSection && sectionStartTime) {
+        const finalTime = Date.now() - sectionStartTime;
+        sectionTimingData[activeSection] = (sectionTimingData[activeSection] || 0) + finalTime;
+        
+        // Send final timing for current section
+        gtag('event', 'section_time', {
+          'section_id': activeSection,
+          'time_spent': finalTime,
+          'time_spent_seconds': Math.round(finalTime / 1000)
+        });
+
+        // Send summary of all section timings
+        Object.entries(sectionTimingData).forEach(([section, time]) => {
+          gtag('event', 'total_section_time', {
+            'section_id': section,
+            'total_time_spent': time,
+            'total_time_seconds': Math.round(time / 1000)
+          });
+        });
       }
+    });
+
+    // Initialize tracking when page loads
+    window.addEventListener('load', () => {
+      trackSectionTiming();
     });
 
     // Verify GA4 is loading
