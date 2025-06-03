@@ -79,6 +79,48 @@
     p {
       margin-bottom: 1rem;
     }
+
+    /* Analytics Panel Styles */
+    #analytics-panel {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      max-width: 300px;
+      z-index: 1000;
+    }
+
+    #analytics-panel h3 {
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .timing-bar {
+      height: 20px;
+      background: #e2e8f0;
+      margin: 5px 0;
+      position: relative;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .timing-bar-fill {
+      height: 100%;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      width: 0%;
+      transition: width 0.5s ease;
+    }
+
+    .timing-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.875rem;
+      color: #4b5563;
+      margin-bottom: 2px;
+    }
   </style>
 </head>
 <body>
@@ -137,12 +179,62 @@
     </div>
   </section>
 
+  <!-- Analytics Panel -->
+  <div id="analytics-panel">
+    <h3>Time Spent Analysis</h3>
+    <div id="timing-bars"></div>
+  </div>
+
   <!-- Custom Analytics Script -->
   <script>
     // Initialize section timing data
     const sectionTiming = {};
     let currentSection = null;
     let startTime = null;
+    let totalTime = 0;
+
+    // Function to format time in seconds
+    function formatTime(ms) {
+      const seconds = Math.floor(ms / 1000);
+      return seconds + 's';
+    }
+
+    // Function to update the analytics panel
+    function updateAnalyticsPanel() {
+      const timingBarsContainer = document.getElementById('timing-bars');
+      timingBarsContainer.innerHTML = '';
+
+      // Calculate total time
+      totalTime = Object.values(sectionTiming).reduce((a, b) => a + b, 0);
+
+      // Sort sections by time spent
+      const sortedSections = Object.entries(sectionTiming)
+        .sort(([,a], [,b]) => b - a);
+
+      // Create bars for each section
+      sortedSections.forEach(([sectionId, time]) => {
+        const percentage = (time / totalTime * 100).toFixed(1);
+        const sectionName = sectionId.charAt(0).toUpperCase() + sectionId.slice(1);
+        
+        const timingLabel = document.createElement('div');
+        timingLabel.className = 'timing-label';
+        timingLabel.innerHTML = `
+          <span>${sectionName}</span>
+          <span>${formatTime(time)} (${percentage}%)</span>
+        `;
+
+        const timingBar = document.createElement('div');
+        timingBar.className = 'timing-bar';
+        
+        const timingBarFill = document.createElement('div');
+        timingBarFill.className = 'timing-bar-fill';
+        timingBarFill.style.width = `${percentage}%`;
+
+        timingBar.appendChild(timingBarFill);
+        timingBarsContainer.appendChild(timingLabel);
+        timingBarsContainer.appendChild(timingBar);
+      });
+    }
 
     // Function to determine which section is currently in view
     function getCurrentSection() {
@@ -165,7 +257,7 @@
       if (currentSection && currentSection !== newSection) {
         // Update time spent on previous section
         sectionTiming[currentSection] = (sectionTiming[currentSection] || 0) + (now - startTime);
-        console.log(`Time spent on ${currentSection}: ${sectionTiming[currentSection]}ms`);
+        updateAnalyticsPanel();
       }
       
       if (newSection !== currentSection) {
@@ -189,6 +281,9 @@
       // Here you could send the timing data to your backend or analytics service
       console.log('Final timing data:', sectionTiming);
     });
+
+    // Update timing data periodically
+    setInterval(updateTiming, 1000);
   </script>
 
   <!-- Cloudflare Web Analytics -->
