@@ -211,6 +211,21 @@
       const sortedSections = Object.entries(sectionTiming)
         .sort(([,a], [,b]) => b - a);
 
+      // Log detailed analytics to console
+      console.group('📊 Detailed Analytics Report');
+      console.log('Total session duration:', formatTime(totalTime));
+      console.table(Object.fromEntries(
+        sortedSections.map(([section, time]) => [
+          section,
+          {
+            'Time (seconds)': (time / 1000).toFixed(1),
+            'Percentage': ((time / totalTime) * 100).toFixed(1) + '%',
+            'Raw milliseconds': time
+          }
+        ])
+      ));
+      console.groupEnd();
+
       // Create bars for each section
       sortedSections.forEach(([sectionId, time]) => {
         const percentage = (time / totalTime * 100).toFixed(1);
@@ -239,14 +254,21 @@
     // Function to determine which section is currently in view
     function getCurrentSection() {
       const sections = document.querySelectorAll('section');
-      for (const section of sections) {
+      let maxVisibility = 0;
+      let mostVisibleSection = null;
+
+      sections.forEach(section => {
         const rect = section.getBoundingClientRect();
-        const visible = rect.top < window.innerHeight/2 && rect.bottom > window.innerHeight/2;
-        if (visible) {
-          return section.id;
+        const viewHeight = Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0);
+        const visibility = Math.max(0, viewHeight / window.innerHeight);
+
+        if (visibility > maxVisibility) {
+          maxVisibility = visibility;
+          mostVisibleSection = section;
         }
-      }
-      return null;
+      });
+
+      return mostVisibleSection ? mostVisibleSection.id : null;
     }
 
     // Function to update timing data
@@ -278,8 +300,31 @@
     // Send final timing data when user leaves the page
     window.addEventListener('beforeunload', () => {
       updateTiming();
-      // Here you could send the timing data to your backend or analytics service
-      console.log('Final timing data:', sectionTiming);
+      
+      // Calculate and log final analytics
+      const totalDuration = Object.values(sectionTiming).reduce((a, b) => a + b, 0);
+      const avgTimePerSection = totalDuration / Object.keys(sectionTiming).length;
+      
+      console.group('🎯 Final Analytics Report');
+      console.log('Total session duration:', formatTime(totalDuration));
+      console.log('Average time per section:', formatTime(avgTimePerSection));
+      console.log('Most viewed section:', Object.entries(sectionTiming)
+        .sort(([,a], [,b]) => b - a)[0][0]);
+      console.log('Detailed timing data:', sectionTiming);
+      console.groupEnd();
+    });
+
+    // Track scroll depth
+    let maxScrollDepth = 0;
+    document.addEventListener('scroll', () => {
+      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const currentScroll = window.scrollY;
+      const scrollPercentage = (currentScroll / scrollHeight * 100).toFixed(1);
+      
+      if (scrollPercentage > maxScrollDepth) {
+        maxScrollDepth = scrollPercentage;
+        console.log(`📜 New max scroll depth: ${maxScrollDepth}%`);
+      }
     });
 
     // Update timing data periodically
