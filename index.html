@@ -8,20 +8,29 @@
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
     
-    // Configure with custom dimensions
+    // Configure GA4 with custom definitions
     gtag('config', 'G-VL8F4DH0XM', {
       debug_mode: true,
-      send_page_view: true,
-      custom_map: {
-        'dimension1': 'section_name',
-        'dimension2': 'time_spent'
-      }
+      send_page_view: true
+    });
+
+    // Register custom definitions
+    gtag('set', 'user_properties', {
+      section_viewer: true
     });
 
     // Section timing tracking
     const sectionTimingData = {};
     let activeSection = null;
     let sectionStartTime = null;
+
+    function sendGAEvent(eventName, params) {
+      gtag('event', eventName, {
+        ...params,
+        non_interaction: false,  // Mark as interactive events
+        value: params.time_spent || 0  // Include value for better reporting
+      });
+    }
 
     function trackSectionTiming() {
       const sections = document.querySelectorAll('section');
@@ -35,11 +44,11 @@
               // Send timing data for previous section if exists
               if (activeSection && sectionStartTime) {
                 const timeSpent = Date.now() - sectionStartTime;
-                gtag('event', 'section_engagement', {
-                  'section_name': activeSection,
-                  'time_spent': Math.round(timeSpent / 1000),
-                  'event_category': 'Section Timing',
-                  'event_label': activeSection
+                sendGAEvent('view_section', {
+                  section_name: activeSection,
+                  time_spent: Math.round(timeSpent / 1000),
+                  engagement_time_msec: timeSpent,
+                  section_type: 'content'
                 });
               }
               
@@ -48,10 +57,9 @@
               sectionStartTime = Date.now();
               
               // Track section view
-              gtag('event', 'section_view', {
-                'section_name': sectionName,
-                'event_category': 'Section Interaction',
-                'event_label': 'View'
+              sendGAEvent('section_visible', {
+                section_name: sectionName,
+                section_type: 'content'
               });
             }
           }
@@ -68,20 +76,20 @@
         sectionTimingData[activeSection] = (sectionTimingData[activeSection] || 0) + finalTime;
         
         // Send final timing data
-        gtag('event', 'section_engagement', {
-          'section_name': activeSection,
-          'time_spent': Math.round(finalTime / 1000),
-          'event_category': 'Section Timing',
-          'event_label': 'Final'
+        sendGAEvent('section_complete', {
+          section_name: activeSection,
+          time_spent: Math.round(finalTime / 1000),
+          engagement_time_msec: finalTime,
+          section_type: 'content'
         });
 
         // Send summary of all section timings
         Object.entries(sectionTimingData).forEach(([section, time]) => {
-          gtag('event', 'total_section_time', {
-            'section_name': section,
-            'time_spent': Math.round(time / 1000),
-            'event_category': 'Section Summary',
-            'event_label': 'Total Time'
+          sendGAEvent('section_summary', {
+            section_name: section,
+            time_spent: Math.round(time / 1000),
+            engagement_time_msec: time,
+            section_type: 'content'
           });
         });
       }
@@ -92,9 +100,9 @@
       trackSectionTiming();
       
       // Track initial page load
-      gtag('event', 'page_ready', {
-        'event_category': 'Page Lifecycle',
-        'event_label': 'Initial Load'
+      sendGAEvent('page_view', {
+        page_title: document.title,
+        engagement_time_msec: 0
       });
     });
 
