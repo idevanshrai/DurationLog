@@ -4,6 +4,56 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Section Duration Analytics</title>
+  <!-- Google Analytics 4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-VL8F4DH0XM"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-VL8F4DH0XM', {
+      send_page_view: true,
+      // Enable enhanced measurement
+      enhanced_measurement: {
+        scroll_tracking: true,
+        time_on_page: true,
+        time_on_site: true
+      }
+    });
+
+    // Track section visibility
+    function trackSectionVisibility() {
+      const sections = document.querySelectorAll('section');
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            gtag('event', 'section_view', {
+              'section_id': entry.target.id,
+              'section_name': entry.target.id.charAt(0).toUpperCase() + entry.target.id.slice(1)
+            });
+          }
+        });
+      }, { threshold: 0.5 });
+
+      sections.forEach(section => observer.observe(section));
+    }
+
+    // Track time spent on sections
+    document.addEventListener('DOMContentLoaded', () => {
+      trackSectionVisibility();
+      
+      // Track scroll depth
+      let maxScroll = 0;
+      document.addEventListener('scroll', () => {
+        const scrollPercent = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
+        if (scrollPercent > maxScroll) {
+          maxScroll = scrollPercent;
+          gtag('event', 'scroll_depth', {
+            'depth': Math.round(maxScroll)
+          });
+        }
+      });
+    });
+  </script>
   <style>
     * {
       margin: 0;
